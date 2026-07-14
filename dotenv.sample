@@ -6,3 +6,5 @@ RKS_SERVICE_ACCOUNT=
 
 # You can use \n to separate the lines in your private key
 RKS_PRIVATE_KEY=
+
+RKS_BASE_URL=https://designer.mydatahelps.org
