@@ -4,6 +4,6 @@
   "dependencies": {
     "dotenv": "^17.4.2",
     "jsonwebtoken": "^9.0.3",
-    "uuid": "^14.0.0"
+    "uuid": "^14.0.1"
   }
 }
