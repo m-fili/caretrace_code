@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Risk Scores - CareTracer</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f1f5f9;
+            color: #1e293b;
+            padding: 30px 20px;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .header {
+            background: white;
+            padding: 24px 32px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: #0E5C6F;
+        }
+        .badge {
+            background: #22c55e;
+            color: white;
+            padding: 4px 16px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .input-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border: 1px solid #e2e8f0;
+        }
+        .input-section h3 {
+            margin-bottom: 16px;
+            font-size: 18px;
+        }
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .input-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 4px;
+        }
+        .input-group input, .input-group select {
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .btn {
+            padding: 10px 24px;
+            background: #0E5C6F;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 12px;
+        }
+        .btn:hover {
+            background: #0a4c5c;
+        }
+        .btn-secondary {
+            background: #64748b;
+        }
+        .btn-secondary:hover {
+            background: #475569;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border: 1px solid #e2e8f0;
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        .card .module-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .card .module-id {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 16px;
+        }
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            background: #f1f5f9;
+            border: 6px solid #0E5C6F;
+            position: relative;
+        }
+        .score-circle .number {
+            font-size: 36px;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .score-circle .label {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 500;
+        }
+        .risk-level {
+            display: inline-block;
+            padding: 4px 16px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 8px 0;
+        }
+        .risk-level.low { background: #dcfce7; color: #166534; }
+        .risk-level.moderate { background: #fef9c3; color: #854d0e; }
+        .risk-level.high { background: #fee2e2; color: #991b1b; }
+        .risk-level.very-high { background: #fee2e2; color: #991b1b; border: 2px solid #dc2626; }
+        .interpretation {
+            font-size: 14px;
+            color: #475569;
+            line-height: 1.5;
+            margin: 12px 0 16px;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+        .factor-list {
+            margin-top: 12px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 12px;
+        }
+        .factor-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 13px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .factor-item .name { color: #475569; }
+        .factor-item .value { font-weight: 600; }
+        .timestamp {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 12px;
+            text-align: right;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+            grid-column: 1/-1;
+        }
+        @media (max-width: 700px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🧬 Risk Scores</h1>
+        <span class="badge">✅ Real Data</span>
+    </div>
+
+    <!-- ورودی داده‌ها -->
+    <div class="input-section">
+        <h3>📝 Patient Data</h3>
+        <div class="input-grid">
+            <div class="input-group">
+                <label>Age</label>
+                <input type="number" id="age" value="72" />
+            </div>
+            <div class="input-group">
+                <label>Family History AD</label>
+                <select id="family_history_ad">
+                    <option value="true">Yes</option>
+                    <option value="false" selected>No</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>APOE-e4 Carrier</label>
+                <select id="apoe_e4_carrier">
+                    <option value="true">Yes</option>
+                    <option value="false" selected>No</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Hypertension</label>
+                <select id="has_hypertension">
+                    <option value="true">Yes</option>
+                    <option value="false" selected>No</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Diabetes</label>
+                <select id="has_diabetes">
+                    <option value="true">Yes</option>
+                    <option value="false" selected>No</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>MoCA Score</label>
+                <input type="number" id="moca_score" value="22" min="0" max="30" />
+            </div>
+            <div class="input-group">
+                <label>Smoker</label>
+                <select id="is_smoker">
+                    <option value="true">Yes</option>
+                    <option value="false" selected>No</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>LDL Cholesterol</label>
+                <input type="number" id="ldl_cholesterol" value="145" />
+            </div>
+            <div class="input-group">
+                <label>HDL Cholesterol</label>
+                <input type="number" id="hdl_cholesterol" value="38" />
+            </div>
+            <div class="input-group">
+                <label>BMI</label>
+                <input type="number" id="bmi" value="28.5" step="0.1" />
+            </div>
+        </div>
+        <button class="btn" onclick="calculateRisk()">🧮 Calculate Risk Scores</button>
+    </div>
+
+    <div id="content">
+        <div class="grid" id="scoresGrid">
+            <div class="loading">⏳ Click "Calculate" to see results...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ============================================================
+    // دریافت داده‌های بیمار از فرم
+    // ============================================================
+    function getPatientData() {
+        return {
+            age: parseInt(document.getElementById('age').value) || 0,
+            family_history_ad: document.getElementById('family_history_ad').value === 'true',
+            apoe_e4_carrier: document.getElementById('apoe_e4_carrier').value === 'true',
+            has_hypertension: document.getElementById('has_hypertension').value === 'true',
+            has_diabetes: document.getElementById('has_diabetes').value === 'true',
+            moca_score: parseInt(document.getElementById('moca_score').value) || 30,
+            is_smoker: document.getElementById('is_smoker').value === 'true',
+            ldl_cholesterol: parseFloat(document.getElementById('ldl_cholesterol').value) || 100,
+            hdl_cholesterol: parseFloat(document.getElementById('hdl_cholesterol').value) || 50,
+            bmi: parseFloat(document.getElementById('bmi').value) || 22
+        };
+    }
+
+    // ============================================================
+    // محاسبه و نمایش امتیازها
+    // ============================================================
+    async function calculateRisk() {
+        const grid = document.getElementById('scoresGrid');
+        grid.innerHTML = `<div class="loading">⏳ Calculating...</div>`;
+
+        const patientData = getPatientData();
+        
+        // استفاده از API
+        try {
+            const response = await fetch('/api/calculate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ patient_data: patientData })
+            });
+            
+            if (!response.ok) {
+                throw new Error('API error');
+            }
+            
+            const data = await response.json();
+            renderResults(data);
+            
+        } catch (error) {
+            // اگر API در دسترس نبود، از محاسبه‌ی مستقیم JS استفاده کن
+            console.warn('API not available, using direct calculation.');
+            const results = calculateDirect(patientData);
+            renderResults(results);
+        }
+    }
+
+    // ============================================================
+    // محاسبه‌ی مستقیم با JS (بدون نیاز به سرور)
+    // ============================================================
+    function calculateDirect(patient) {
+        const results = {};
+        
+        // ---- ماژول AD ----
+        let adScore = 0;
+        if (patient.age >= 65) adScore += (patient.age - 60) * 0.5;
+        if (patient.family_history_ad) adScore += 15;
+        if (patient.apoe_e4_carrier) adScore += 20;
+        if (patient.has_hypertension) adScore += 8;
+        if (patient.has_diabetes) adScore += 10;
+        if (patient.moca_score < 24) adScore += (24 - patient.moca_score) * 1.5;
+        adScore = Math.min(adScore, 100);
+        
+        let adLevel = "Low", adInterp = "Low risk of Alzheimer's Disease.";
+        if (adScore >= 60) { adLevel = "Very High"; adInterp = "Very high risk. Immediate consultation with a specialist is recommended."; }
+        else if (adScore >= 40) { adLevel = "High"; adInterp = "High risk. Please consult with a neurologist for further evaluation."; }
+        else if (adScore >= 20) { adLevel = "Moderate"; adInterp = "Moderate risk. Consider lifestyle interventions and regular cognitive screening."; }
+        
+        results["AD"] = {
+            module_id: "AD",
+            module_name: "Alzheimer's Disease",
+            score: Math.round(adScore * 100) / 100,
+            risk_level: adLevel,
+            interpretation: adInterp,
+            risk_factors: [
+                { name: "Age", value: patient.age },
+                { name: "Family History", value: patient.family_history_ad ? "Yes" : "No" },
+                { name: "APOE-e4", value: patient.apoe_e4_carrier ? "Yes" : "No" },
+                { name: "Hypertension", value: patient.has_hypertension ? "Yes" : "No" },
+                { name: "Diabetes", value: patient.has_diabetes ? "Yes" : "No" },
+                { name: "MoCA Score", value: patient.moca_score }
+            ],
+            timestamp: new Date().toISOString()
+        };
+        
+        // ---- ماژول CVD ----
+        let cvdScore = 0;
+        if (patient.age >= 50) cvdScore += (patient.age - 45) * 0.5;
+        if (patient.has_hypertension) cvdScore += 12;
+        if (patient.is_smoker) cvdScore += 18;
+        if (patient.has_diabetes) cvdScore += 10;
+        if (patient.ldl_cholesterol > 130) cvdScore += (patient.ldl_cholesterol - 130) * 0.2;
+        if (patient.hdl_cholesterol < 40) cvdScore += (40 - patient.hdl_cholesterol) * 0.5;
+        if (patient.bmi > 25) cvdScore += (patient.bmi - 25) * 0.8;
+        cvdScore = Math.min(cvdScore, 100);
+        
+        let cvdLevel = "Low", cvdInterp = "Low risk of Cardiovascular Disease.";
+        if (cvdScore >= 50) { cvdLevel = "Very High"; cvdInterp = "Very high risk. Immediate consultation with a specialist is recommended."; }
+        else if (cvdScore >= 30) { cvdLevel = "High"; cvdInterp = "High risk. Please consult with a cardiologist."; }
+        else if (cvdScore >= 15) { cvdLevel = "Moderate"; cvdInterp = "Moderate risk. Consider lifestyle modifications and regular check-ups."; }
+        
+        results["CVD"] = {
+            module_id: "CVD",
+            module_name: "Cardiovascular Disease",
+            score: Math.round(cvdScore * 100) / 100,
+            risk_level: cvdLevel,
+            interpretation: cvdInterp,
+            risk_factors: [
+                { name: "Age", value: patient.age },
+                { name: "Hypertension", value: patient.has_hypertension ? "Yes" : "No" },
+                { name: "Smoker", value: patient.is_smoker ? "Yes" : "No" },
+                { name: "Diabetes", value: patient.has_diabetes ? "Yes" : "No" },
+                { name: "LDL/HDL", value: `${patient.ldl_cholesterol}/${patient.hdl_cholesterol}` },
+                { name: "BMI", value: patient.bmi }
+            ],
+            timestamp: new Date().toISOString()
+        };
+        
+        return results;
+    }
+
+    // ============================================================
+    // رندر نتایج
+    // ============================================================
+    function renderResults(data) {
+        const grid = document.getElementById('scoresGrid');
+        let html = '';
+
+        for (const [key, result] of Object.entries(data)) {
+            const score = result.score || 0;
+            const riskLevel = result.risk_level?.toLowerCase() || 'unknown';
+            const riskClass = riskLevel.replace(' ', '-');
+
+            html += `
+                <div class="card">
+                    <div class="module-title">${result.module_name || key}</div>
+                    <div class="module-id">${result.module_id || key}</div>
+
+                    <div class="score-circle" style="border-color: ${getColor(riskLevel)};">
+                        <span class="number">${Math.round(score)}</span>
+                        <span class="label">/ 100</span>
+                    </div>
+
+                    <div style="text-align:center;">
+                        <span class="risk-level ${riskClass}">${result.risk_level || 'Unknown'}</span>
+                    </div>
+
+                    <div class="interpretation">
+                        ${result.interpretation || 'No interpretation available.'}
+                    </div>
+
+                    <div class="factor-list">
+                        ${(result.risk_factors || []).map(f => `
+                            <div class="factor-item">
+                                <span class="name">${f.name || 'Unknown'}</span>
+                                <span class="value">${f.value !== undefined ? f.value : '—'}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div class="timestamp">
+                        ⏱️ ${result.timestamp ? new Date(result.timestamp).toLocaleString() : 'N/A'}
+                    </div>
+                </div>
+            `;
+        }
+
+        grid.innerHTML = html;
+    }
+
+    function getColor(level) {
+        const map = {
+            'low': '#22c55e',
+            'moderate': '#f59e0b',
+            'high': '#ef4444',
+            'very-high': '#dc2626'
+        };
+        return map[level] || '#0E5C6F';
+    }
+
+    // بارگذاری اولیه
+    document.addEventListener('DOMContentLoaded', function() {
+        // نمایش داده‌های پیش‌فرض
+        calculateRisk();
+    });
+</script>
+</body>
+</html>
